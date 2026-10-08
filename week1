@@ -1,0 +1,157 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAX_ATTR 50
+#define MAX_NAME 100
+#define MAX_LINE 1000
+#define MAX_CLASS 50
+
+struct Attribute
+{
+    char name[MAX_NAME];
+    char type[MAX_NAME];
+};
+
+int main()
+{
+    FILE *fp;
+    char filename[100];
+    char line[MAX_LINE];
+
+    struct Attribute attr[MAX_ATTR];
+    int attrCount = 0;
+    int recordCount = 0;
+    int dataStarted = 0;
+
+    printf("============================================\n");
+    printf("       WEKA ARFF DATASET ANALYSIS\n");
+    printf("============================================\n");
+
+    printf("Enter ARFF file name: ");
+    scanf("%s", filename);
+
+    fp = fopen(filename, "r");
+
+    if (fp == NULL)
+    {
+        printf("Error: Cannot open file %s\n", filename);
+        return 1;
+    }
+
+    /* Read ARFF file */
+    while (fgets(line, sizeof(line), fp))
+    {
+        /* Remove newline */
+        line[strcspn(line, "\r\n")] = '\0';
+
+        /* Skip blank lines and comments */
+        if (strlen(line) == 0 || line[0] == '%')
+            continue;
+
+        /* Check for @attribute */
+        if (strncasecmp(line, "@attribute", 10) == 0)
+        {
+            char temp[MAX_LINE];
+
+            strcpy(temp, line);
+
+            char *token = strtok(temp, " \t");
+            token = strtok(NULL, " \t");
+
+            if (token != NULL)
+            {
+                strcpy(attr[attrCount].name, token);
+
+                token = strtok(NULL, "");
+                if (token != NULL)
+                {
+                    while (*token == ' ' || *token == '\t')
+                        token++;
+
+                    strcpy(attr[attrCount].type, token);
+                }
+
+                attrCount++;
+            }
+        }
+
+        /* Check for @data */
+        if (strncasecmp(line, "@data", 5) == 0)
+        {
+            dataStarted = 1;
+            break;
+        }
+    }
+
+    /* Count records */
+    while (dataStarted && fgets(line, sizeof(line), fp))
+    {
+        line[strcspn(line, "\r\n")] = '\0';
+
+        if (strlen(line) == 0 || line[0] == '%')
+            continue;
+
+        recordCount++;
+    }
+
+    fclose(fp);
+
+    /* Display dataset information */
+    printf("\n============================================\n");
+    printf("             DATASET INFORMATION\n");
+    printf("============================================\n");
+
+    printf("Number of Attributes : %d\n", attrCount);
+    printf("Number of Records    : %d\n", recordCount);
+
+    printf("\nAttribute Details:\n");
+    printf("--------------------------------------------\n");
+
+    for (int i = 0; i < attrCount; i++)
+    {
+        printf("%d. %-20s Type: %s\n",
+               i + 1,
+               attr[i].name,
+               attr[i].type);
+    }
+
+    /* Class attribute */
+    if (attrCount > 0)
+    {
+        printf("\nClass Attribute: %s\n", attr[attrCount - 1].name);
+        printf("Class Type     : %s\n", attr[attrCount - 1].type);
+    }
+
+    printf("\n============================================\n");
+    printf("Analysis completed successfully.\n");
+    printf("============================================\n");
+
+    return 0;
+
+Sample Output
+============================================
+       WEKA ARFF DATASET ANALYSIS
+============================================
+Enter ARFF file name: weather.arff
+
+============================================
+             DATASET INFORMATION
+============================================
+Number of Attributes : 5
+Number of Records    : 14
+
+Attribute Details:
+--------------------------------------------
+1. outlook              Type: {sunny,overcast,rainy}
+2. temperature          Type: {hot,mild,cool}
+3. humidity             Type: {high,normal}
+4. windy                Type: {TRUE,FALSE}
+5. play                 Type: {yes,no}
+
+Class Attribute: play
+Class Type     : {yes,no}
+
+============================================
+Analysis completed successfully.
